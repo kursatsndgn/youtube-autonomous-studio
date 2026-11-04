@@ -1,16 +1,56 @@
 """
-YouTube Data API v3 Automated Uploader
-Handles authenticated video uploads, custom thumbnails, and metadata.
+YouTube Data API v3 Resumable Uploader
+Handles automated publishing for 12-15 min Long-form videos and 9:16 Shorts.
 """
 
 import os
-from typing import List, Optional
+import sys
+import time
+from typing import List, Optional, Dict, Any
 
 
 class YouTubeUploader:
-    def __init__(self, client_secrets: str = "config/client_secrets.json", token_pickle: str = "config/token.pickle"):
+    def __init__(self, client_secrets: str = "config/client_secrets.json", token_path: str = "config/token.pickle"):
         self.client_secrets = client_secrets
-        self.token_pickle = token_pickle
+        self.token_path = token_path
+        self.service = None
+
+    def authenticate(self):
+        """Google OAuth2 akışını başlatır ve yetki alır."""
+        try:
+            import pickle
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            from google.auth.transport.requests import Request
+            from googleapiclient.discovery import build
+
+            SCOPES = [
+                "https://www.googleapis.com/auth/youtube.upload",
+                "https://www.googleapis.com/auth/youtube"
+            ]
+
+            credentials = None
+            if os.path.exists(self.token_path):
+                with open(self.token_path, "rb") as token:
+                    credentials = pickle.load(token)
+
+            if not credentials or not credentials.valid:
+                if credentials and credentials.expired and credentials.refresh_token:
+                    credentials.refresh(Request())
+                elif os.path.exists(self.client_secrets):
+                    flow = InstalledAppFlow.from_client_secrets_file(self.client_secrets, SCOPES)
+                    credentials = flow.run_local_server(port=0)
+                    with open(self.token_path, "wb") as token:
+                        pickle.dump(credentials, token)
+                else:
+                    print(f"[!] {self.client_secrets} bulunamadı! Simülasyon modunda çalışılacak.")
+                    return None
+
+            self.service = build("youtube", "v3", credentials=credentials)
+            print("[+] YouTube API yetkilendirmesi başarılı!")
+            return self.service
+        except Exception as e:
+            print(f"[!] YouTube yetkilendirme hatası: {e}")
+            return None
 
     def upload_video(
         self,
@@ -20,41 +60,74 @@ class YouTubeUploader:
         tags: Optional[List[str]] = None,
         category_id: str = "28",
         privacy_status: str = "unlisted",
+        is_shorts: bool = False,
         thumbnail_path: Optional[str] = None
-    ) -> dict:
-        """
-        Videoyu YouTube kanalına yükler.
-        """
-        tags = tags or ["ai", "teknoloji", "yazilim"]
-        print(f"[*] YouTube Yükleme Hazırlığı:")
-        print(f"    - Başlık: {title}")
+    ) -> Dict[str, Any]:
+        """Videoyu YouTube'a yükler (Long-form veya #Shorts)."""
+        tags = tags or ["tarih", "futbol", "belgesel", "hikaye"]
+        if is_shorts and "#shorts" not in title.lower():
+            title = f"{title} #Shorts"
+            if "#shorts" not in description.lower():
+                description = f"{description}\n\n#Shorts #YouTubeShorts #Tarih #Futbol"
+
+        print(f"\n[*] 📡 YouTube'a Yükleniyor: {title}")
+        print(f"    - Dosya: {video_path}")
+        print(f"    - Tür: {'YouTube Shorts' if is_shorts else '12-15 Dk Ana Video'}")
         print(f"    - Gizlilik: {privacy_status}")
-        print(f"    - Etiketler: {', '.join(tags)}")
 
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video bulunamadı: {video_path}")
 
-        try:
-            # Google API Client kütüphaneleri
-            from googleapiclient.discovery import build
-            from googleapiclient.http import MediaFileUpload
-            from google_auth_oauthlib.flow import InstalledAppFlow
+        # Eğer API yetkilendirmesi hazırsa gerçek upload yap
+        if not self.service:
+            self.authenticate()
 
-            # Gerçek token ve API yetkilendirme akışı
-            print("[*] YouTube API kimlik doğrulaması kontrol ediliyor...")
-            # (Yetkilendirme mekanizması)
-            return {
-                "status": "success",
-                "video_id": "simulated_yt_id_123",
-                "url": "https://www.youtube.com/watch?v=simulated_yt_id_123",
-                "privacy": privacy_status
-            }
+        if self.service:
+            try:
+                from googleapiclient.http import MediaFileUpload
+                body = {
+                    "snippet": {
+                        "title": title[:100],
+                        "description": description[:5000],
+                        "tags": tags,
+                        "categoryId": category_id
+                    },
+                    "status": {
+                        "privacyStatus": privacy_status,
+                        "selfDeclaredMadeForKids": False
+                    }
+                }
+                media = MediaFileUpload(video_path, chunksize=1024*1024*4, resumable=True, mimetype="video/mp4")
+                request = self.service.videos().insert(part="snippet,status", body=body, media_body=media)
 
-        except ImportError:
-            print("[!] google-api-python-client kütüphanesi eksik. Yükleme simülasyonu çalıştı.")
-            return {
-                "status": "simulated",
-                "video_id": "demo_video_id",
-                "url": "https://www.youtube.com/watch?v=demo_video_id",
-                "privacy": privacy_status
-            }
+                response = None
+                print("[*] Yükleme başlatıldı...")
+                while response is None:
+                    status, response = request.next_chunk()
+                    if status:
+                        print(f"    Yükleniyor: %{int(status.progress() * 100)}")
+
+                video_id = response.get("id")
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                print(f"[+] Başarıyla yüklendi! Link: {video_url}")
+
+                # Thumbnail yükleme (sadece uzun videolarda)
+                if thumbnail_path and os.path.exists(thumbnail_path) and not is_shorts:
+                    try:
+                        self.service.thumbnails().set(
+                            videoId=video_id,
+                            media_body=MediaFileUpload(thumbnail_path)
+                        ).execute()
+                        print("[+] Thumbnail yüklendi!")
+                    except Exception as te:
+                        print(f"[!] Thumbnail yükleme uyarısı: {te}")
+
+                return {"status": "success", "video_id": video_id, "url": video_url}
+            except Exception as e:
+                print(f"[!] Gerçek upload sırasında hata: {e}. Simüle link dönülüyor.")
+
+        # Fallback / Simülasyon
+        simulated_id = f"yt_{int(time.time())}"
+        sim_url = f"https://www.youtube.com/watch?v={simulated_id}"
+        print(f"[i] (Simülasyon Modu) Video hazırlandı ve kuyruğa alındı: {sim_url}")
+        return {"status": "simulated", "video_id": simulated_id, "url": sim_url}

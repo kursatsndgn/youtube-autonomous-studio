@@ -1,0 +1,63 @@
+{
+  "project_id": "ep01_futbol_savasi_1969",
+  "title": "Bir Futbol Maçı Gerçek Bir Savaşı Nasıl Başlattı? (100 Saatlik Futbol Savaşı)",
+  "target_duration_minutes": 14,
+  "chapters": [
+    {
+      "chapter_id": 1,
+      "name": "Bölüm 1: Soğuk Açılış & O 72 Saat (The Cold Open)",
+      "duration_range": "0:00 - 1:45",
+      "hook": "Bir hakem düdüğü ile bir sınır kasabasının bombalanması arasında sadece 72 saat vardı.",
+      "scenes_count": 5
+    },
+    {
+      "chapter_id": 2,
+      "name": "Bölüm 2: Kıvılcım Futbol Değildi (Toprak, Muz Şirketleri ve 300.000 İnsan)",
+      "duration_range": "1:45 - 4:15",
+      "context": "United Fruit Company, Honduras hükümetinin toprak reformu ve El Salvadorlu göçmen krizi.",
+      "scenes_count": 6
+    },
+    {
+      "chapter_id": 3,
+      "name": "Bölüm 3: Cehennem Gibi 3 Maç (Tegucigalpa, San Salvador ve Meksika)",
+      "duration_range": "4:15 - 7:45",
+      "events": "Uykusuz bırakılan futbolcular, otel yangınları, Amelia Bolaños'un ölümü ve Meksika'daki ölüm kalım maçı.",
+      "scenes_count": 8
+    },
+    {
+      "chapter_id": 4,
+      "name": "Bölüm 4: 100 Saatlik Savaş (Tarihin Son Pervaneli İt Dalaşı)",
+      "duration_range": "7:45 - 11:00",
+      "events": "14 Temmuz 1969: El Salvador hava kuvvetlerinin saldırısı, Corsair ve Mustang uçaklarının kapışması, 3.000 sivil kaybı.",
+      "scenes_count": 8
+    },
+    {
+      "chapter_id": 5,
+      "name": "Bölüm 5: Ateşkes, Dünya Kupası ve Harabeler",
+      "duration_range": "11:00 - 13:15",
+      "events": "OAS müdahalesi, El Salvador'un 1970 Dünya Kupası'na gitmesi fakat ülkenin iç savaşa sürüklenmesi.",
+      "scenes_count": 5
+    },
+    {
+      "chapter_id": 6,
+      "name": "Bölüm 6: Son Söz ve Çıkarılan Ders (Outro)",
+      "duration_range": "13:15 - 14:30",
+      "quote": "Futbol hiçbir zaman sadece futbol değildir.",
+      "scenes_count": 3
+    }
+  ],
+  "shorts_cuts": [
+    {
+      "shorts_id": 1,
+      "title": "Futbol Yüzünden Çıkan Gerçek Bir Savaş!",
+      "duration_seconds": 55,
+      "angle": "3000 insanın hayatına mal olan 90 dakikanın şok edici özeti."
+    },
+    {
+      "shorts_id": 2,
+      "title": "Milli Takımı Yenilince İntihar Eden Genç Kızın Hikayesi",
+      "duration_range": "50",
+      "angle": "Amelia Bolaños efsanesi ve El Salvador'un savaş çığlığı."
+    }
+  ]
+}
