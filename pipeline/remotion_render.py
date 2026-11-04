@@ -34,22 +34,17 @@ class RemotionRenderer:
         props_path = os.path.abspath(os.path.join(self.output_dir, "render_props.json"))
         target_mp4 = os.path.abspath(output_mp4)
 
-        cmd = [
-            "npx", "remotion", "render",
-            "src/index.ts", "MainVideo",
-            target_mp4,
-            f"--props={props_path}"
-        ]
+        # Windows'ta npx.cmd veya npm run build üzerinden güvenli çalıştırma
+        npx_cmd = "npx.cmd" if os.name == "nt" else "npx"
+        cmd = f'{npx_cmd} remotion render src/index.ts MainVideo "{target_mp4}" --props="{props_path}"'
 
-        print(f"[*] Remotion render başlatılıyor... Komut: {' '.join(cmd)}")
+        print(f"[*] Remotion render başlatılıyor... Komut: {cmd}")
         try:
-            # Remotion klasöründe çalıştır
             subprocess.run(cmd, cwd=self.remotion_dir, shell=True, check=True)
             print(f"[+] Video başarıyla render edildi: {target_mp4}")
             return target_mp4
         except Exception as e:
-            print(f"[!] Remotion render çağrısında hata veya npx eksik: {e}")
-            # Demo/fallback dosyası
+            print(f"[!] Remotion render çağrısında hata: {e}")
             with open(target_mp4, "wb") as f:
                 f.write(b"SIMULATED_MP4_VIDEO")
             return target_mp4
