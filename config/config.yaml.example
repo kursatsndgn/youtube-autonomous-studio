@@ -1,0 +1,28 @@
+# YouTube Autonomous Studio Yapılandırması
+
+youtube:
+  client_secrets_file: "config/client_secrets.json"
+  credentials_file: "config/token.pickle"
+  default_privacy: "unlisted" # "public", "unlisted", "private"
+  default_category: "28" # 28 = Science & Technology
+
+ai:
+  model: "gemini-2.5-flash"
+  api_key_env: "GEMINI_API_KEY"
+
+voice:
+  engine: "edge-tts" # "openvoice" veya "edge-tts"
+  voice_name: "tr-TR-AhmetNeural" # veya "en-US-ChristopherNeural"
+  speed: 1.05
+
+comfyui:
+  enabled: false
+  server_address: "127.0.0.1:8188"
+  workflow_file: "config/comfy_sdxl_workflow.json"
+
+remotion:
+  composition_id: "MainVideo"
+  fps: 30
+  width: 1920
+  height: 1080
+  quality: 90

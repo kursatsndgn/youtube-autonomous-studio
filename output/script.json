@@ -1,0 +1,27 @@
+{
+  "topic": "Otonom Ajanlar ile Gelecegin Yazilimi",
+  "total_scenes": 3,
+  "scenes": [
+    {
+      "scene_id": 1,
+      "speech_text": "Son bir ayda Otonom Ajanlar ile Gelecegin Yazilimi hakkında duyduğunuz neredeyse her şey yanıltıcıydı. Çünkü arka plandaki gerçek oyun bambaşka.",
+      "visual_prompt": "Dramatic cinematic shot representing Otonom Ajanlar ile Gelecegin Yazilimi, dark moody neon cyan atmosphere, 8k resolution",
+      "overlay_text": "BÜYÜK YANILGI",
+      "pacing": "fast"
+    },
+    {
+      "scene_id": 2,
+      "speech_text": "Birçoğumuz eski yöntemlerle saatlerce vakit kaybediyoruz. Oysa yeni nesil otonom araçlar süreci dakikalara indirdi.",
+      "visual_prompt": "Split screen comparison: slow vintage computer vs ultra high-speed modern digital pipeline",
+      "overlay_text": "10X HIZ FARKI",
+      "pacing": "medium"
+    },
+    {
+      "scene_id": 3,
+      "speech_text": "İşte tam olarak bu yüzden şimdi göreceğiniz 3 adımı hemen iş akışınıza eklemeniz gerekiyor. İlk adımla başlayalım.",
+      "visual_prompt": "Step 1 holographic glowing banner in a high-tech modern studio, clean minimalism",
+      "overlay_text": "ADIM 1: BAŞLANGIÇ",
+      "pacing": "fast"
+    }
+  ]
+}

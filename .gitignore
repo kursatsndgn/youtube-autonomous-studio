@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+
+# Remotion & Node
+remotion/node_modules/
+node_modules/
+.remotion/
+
+# Medya & Render Çıktıları
+output/*.mp4
+output/*.wav
+output/*.png
+output/*.jpg
+assets/images/*.png
+assets/cutouts/*.png
+
+# Gizli Anahtarlar & Tokenlar
+config/client_secrets.json
+config/token.pickle
+config/config.yaml
+.env
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

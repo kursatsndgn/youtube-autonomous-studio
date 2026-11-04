@@ -1,0 +1,23 @@
+# YouTube Autonomous Studio Bağımlılıkları
+
+# Trend ve Araştırma
+yt-dlp>=2024.1.0
+
+# Ses ve Hizalama
+edge-tts>=6.1.10
+faster-whisper>=1.0.0
+
+# Görsel ve Arka Plan Temizleme
+rembg>=2.0.50
+pillow>=10.0.0
+
+# YouTube API Entegrasyonu
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# Yardımcı Araçlar
+pydantic>=2.0.0
+pyyaml>=6.0
+requests>=2.31.0
+tqdm>=4.66.0
