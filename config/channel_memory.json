@@ -1,0 +1,22 @@
+{
+  "channel_name": "Tarihin Kırılma Noktaları",
+  "brand_voice": "Sinematik, sürükleyici, dramatik gerilim, derin araştırmalı ve samimi insan hikayesi.",
+  "content_pillars": [
+    "Futbol Efsaneleri ve Skandalları",
+    "Bilinmeyen Tarih ve Kelebek Etkileri",
+    "Tarih ve Futbolun Kesiştiği Kült Olaylar"
+  ],
+  "video_specs": {
+    "target_duration_minutes": "12-15",
+    "target_wpm": 150,
+    "target_word_count": "1800-2300",
+    "resolution": "1920x1080",
+    "shorts_resolution": "1080x1920",
+    "shorts_per_video": 2
+  },
+  "top_performing_hooks": [
+    "Bir hakem düdüğü ile bir sınır karakolunun bombalanması arasında tam 72 saat vardı...",
+    "Herkes bunun sıradan bir futbol maçı olduğunu sanıyordu; ta ki gökyüzünde savaş uçakları belirene kadar."
+  ],
+  "published_videos_history": []
+}
