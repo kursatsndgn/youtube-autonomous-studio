@@ -16,8 +16,9 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(PROJECT_DIR)
+# Harici Çıktı Dizini (Git Reposu Dışında - Masaüstü)
+EXTERNAL_OUTPUT_DIR = os.path.join(os.path.expanduser('~'), 'Desktop', 'Taktika_Video_Outputs')
+os.makedirs(EXTERNAL_OUTPUT_DIR, exist_ok=True)
 
 from pipeline.researcher import TrendResearcher
 from pipeline.scriptwriter import AntiSlopScriptwriter

@@ -10,6 +10,12 @@ import sys
 import json
 from typing import List, Dict, Any
 
+# Proje kök dizinini sys.path'e ekle
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+os.chdir(BASE_DIR)
+
 from pipeline.researcher import TrendResearcher
 from pipeline.scriptwriter import AntiSlopScriptwriter
 from pipeline.voice_engine import VoiceEngine
@@ -18,7 +24,15 @@ from pipeline.remotion_render import RemotionRenderer
 from pipeline.shorts_generator import ShortsGenerator
 from pipeline.youtube_uploader import YouTubeUploader
 
-# 5 Belgesel Konusu (12-15 Dakikalık Kurgular)
+# Harici Çıktı Dizini (Git Reposu Dışında - Masaüstü)
+EXTERNAL_OUTPUT_DIR = os.path.join(os.path.expanduser('~'), 'Desktop', 'Taktika_Video_Outputs')
+MAIN_VIDEOS_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'main_videos')
+SHORTS_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'shorts')
+AUDIO_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'audio')
+ASSETS_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'assets')
+
+for d in [EXTERNAL_OUTPUT_DIR, MAIN_VIDEOS_DIR, SHORTS_DIR, AUDIO_DIR, ASSETS_DIR]:
+    os.makedirs(d, exist_ok=True)
 BATCH_PROJECTS = [
     {
         "id": 1,
@@ -93,21 +107,24 @@ async def run_batch_automation(auto_upload: bool = True, privacy: str = "unliste
         script = writer.build_script(topic)
 
         # 3. Görsellerin Hazırlanması
+        visuals = VisualEngine(output_dir=ASSETS_DIR)
         for scene in script["scenes"]:
             visuals.generate_scene_image(scene["scene_id"], scene["visual_prompt"])
 
         # 4. Seslendirme (TTS) & Kelime Hizalama
-        audio_file = os.path.join("output", f"voiceover_ep_{idx}.wav")
+        audio_file = os.path.join(AUDIO_DIR, f"voiceover_ep_{idx}.wav")
         full_text = " ".join([s["speech_text"] for s in script["scenes"]])
         await voice.generate_tts(full_text, audio_file)
         words_data = voice.align_words_faster_whisper(audio_file)
 
         # 5. Ana Video (1920x1080) Render
-        main_video_path = os.path.join("output", f"main_ep_{idx}.mp4")
+        main_video_path = os.path.join(MAIN_VIDEOS_DIR, f"main_ep_{idx}.mp4")
+        renderer = RemotionRenderer(output_dir=EXTERNAL_OUTPUT_DIR)
         renderer.prepare_props(script, words_data, audio_file)
         rendered_main = renderer.render_video(main_video_path)
 
         # 6. Otomatik 2 Shorts Render (1080x1920 Dikey)
+        shorts_gen = ShortsGenerator(output_dir=SHORTS_DIR)
         shorts_meta = shorts_gen.generate_two_shorts_scripts(topic, script["scenes"])
         rendered_shorts = []
         for s_idx, s_item in enumerate(shorts_meta, 1):
