@@ -1,0 +1,56 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+
+# Remotion & Node
+remotion/node_modules/
+node_modules/
+.remotion/
+
+# Medya & Render Çıktıları
+output/**/*.mp4
+output/**/*.mp3
+output/**/*.wav
+output/**/*.png
+output/**/*.jpg
+output/**/*.json
+remotion/public/_pipeline/
+remotion/public/**/*.mp3
+assets/credits.json
+assets/characters/**/*.png
+vendor/
+config/voice/
+research/**/raw/
+assets/images/*.png
+assets/cutouts/*.png
+
+# Gizli Anahtarlar & Tokenlar
+config/client_secrets.json
+config/token.pickle
+config/config.yaml
+.env
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Kişisel çıktılar ve video projeleri (public repoya girmez)
+output/
+remotion/public/
+remotion/src/local/
+remotion/src/Yeniceri.tsx
+.claude/
