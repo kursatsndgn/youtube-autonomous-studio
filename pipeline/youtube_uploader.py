@@ -42,15 +42,13 @@ class YouTubeUploader:
                     with open(self.token_path, "wb") as token:
                         pickle.dump(credentials, token)
                 else:
-                    print(f"[!] {self.client_secrets} bulunamadı! Simülasyon modunda çalışılacak.")
-                    return None
+                    raise FileNotFoundError(f"{self.client_secrets} bulunamadı; YouTube OAuth istemcisi gerekli.")
 
             self.service = build("youtube", "v3", credentials=credentials)
             print("[+] YouTube API yetkilendirmesi başarılı!")
             return self.service
         except Exception as e:
-            print(f"[!] YouTube yetkilendirme hatası: {e}")
-            return None
+            raise RuntimeError(f"YouTube yetkilendirme hatası: {e}") from e
 
     def upload_video(
         self,
@@ -124,10 +122,5 @@ class YouTubeUploader:
 
                 return {"status": "success", "video_id": video_id, "url": video_url}
             except Exception as e:
-                print(f"[!] Gerçek upload sırasında hata: {e}. Simüle link dönülüyor.")
-
-        # Fallback / Simülasyon
-        simulated_id = f"yt_{int(time.time())}"
-        sim_url = f"https://www.youtube.com/watch?v={simulated_id}"
-        print(f"[i] (Simülasyon Modu) Video hazırlandı ve kuyruğa alındı: {sim_url}")
-        return {"status": "simulated", "video_id": simulated_id, "url": sim_url}
+                raise RuntimeError(f"YouTube yükleme başarısız: {e}") from e
+        raise RuntimeError("YouTube servisi hazır değil; yükleme yapılmadı.")

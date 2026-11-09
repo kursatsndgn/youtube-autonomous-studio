@@ -1,128 +1,117 @@
 """
-YouTube Autonomous Studio - Main Orchestrator CLI
-Integrates all skills, AI engines, programmatic renderers, and publish pipelines.
+YouTube Autonomous Studio — orkestrasyon CLI.
+
+Akış (ARCHITECTURE.md departmanlarıyla):
+  02 senaryo (Markdown, ajan + skill'lerle yazılmış)  -> slop denetimi
+  03 seslendirme (Edge-TTS [+ OpenVoice ton klonlama]) + kelime zamanları
+  05 smart montage (opsiyonel jump-cut) + Remotion render
+  08 donuk sahne denetimi
+  06 kapak (opsiyonel)
+  07 YouTube yükleme (opsiyonel, varsayılan unlisted)
+
+Herhangi bir adım başarısız olursa akış durur; sahte çıktı üretilmez.
+
+Örnek:
+  python main.py --topic "Yeniçeri Merdiveni" --script output/yeniceri/senaryo.md \
+      --out-dir output/yeniceri --thumbnail-text "KAZANDAN AĞALIĞA"
 """
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 
-# Windows konsol UTF-8 çıktı desteği
 if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-        sys.stderr.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for s in (sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
-# Harici Çıktı Dizini (Git Reposu Dışında - Masaüstü)
-EXTERNAL_OUTPUT_DIR = os.path.join(os.path.expanduser('~'), 'Desktop', 'Taktika_Video_Outputs')
-os.makedirs(EXTERNAL_OUTPUT_DIR, exist_ok=True)
-
-from pipeline.researcher import TrendResearcher
 from pipeline.scriptwriter import AntiSlopScriptwriter
 from pipeline.voice_engine import VoiceEngine
-from pipeline.visual_engine import VisualEngine
 from pipeline.remotion_render import RemotionRenderer
-from pipeline.shorts_generator import ShortsGenerator
-from pipeline.youtube_uploader import YouTubeUploader
-from pipeline.batch_studio import run_batch_automation
+from pipeline import smart_montage
 
 
-async def run_pipeline(topic: str, auto_upload: bool = False, privacy: str = "unlisted"):
-    print("=" * 65)
-    print("🚀 YOUTUBE AUTONOMOUS STUDIO: OTONOM VİDEO ÜRETİM HATTI")
-    print(f"🎯 Hedef Konu: {topic}")
-    print("=" * 65)
+async def run(a: argparse.Namespace) -> None:
+    os.makedirs(a.out_dir, exist_ok=True)
+    print(f"=== {a.topic} ===")
 
-    # Adım 1: Trend ve Rakip Araştırması (yt-dlp, open-notebook, fabric)
-    print("\n[Aşama 1/6] 🔍 Trend ve Rakip Analizi Başlatılıyor...")
-    researcher = TrendResearcher()
-    brief = researcher.generate_topic_brief(topic)
-    competitors = researcher.search_competitor_videos(topic, max_results=3)
-    print(f"   Bulunan rakip video sayısı: {len(competitors)}")
+    # 02 — senaryo
+    script = AntiSlopScriptwriter(a.out_dir).build_script(a.topic, a.script)
+    text = " ".join(s["speech_text"] for s in script["scenes"])
 
-    # Adım 2: Anti-Slop & ADHD Pacing Senaryo Üretimi
-    print("\n[Aşama 2/6] ✍️ Anti-Slop & ADHD Pacing ile Senaryo Yazılıyor...")
-    writer = AntiSlopScriptwriter()
-    script = writer.build_script(topic)
-    print(f"   Toplam Sahne Sayısı: {script['total_scenes']}")
+    # 03 — ses
+    voice = VoiceEngine(a.out_dir, voice=a.voice, rate=a.rate)
+    base_audio = os.path.join(a.out_dir, "voice_base.mp3")
+    await voice.generate_tts(text, base_audio)
+    words = voice.last_words
+    audio = base_audio
+    if a.clone_voice:
+        audio = voice.clone_tone(base_audio, os.path.join(a.out_dir, "voiceover.wav"))
 
-    # Adım 3: Görsel ve Sticker Varlıklarının Üretimi (ComfyUI + rembg)
-    print("\n[Aşama 3/6] 🎨 Görsel ve Cutout Varlıklar Hazırlanıyor...")
-    visuals = VisualEngine()
-    for scene in script["scenes"]:
-        img_path = visuals.generate_scene_image(scene["scene_id"], scene["visual_prompt"])
+    # 05 — smart montage
+    if a.jumpcut:
+        jc = smart_montage.jump_cut_audio(audio, os.path.join(a.out_dir, "voiceover_cut.wav"))
+        words = smart_montage.remap_words(words, jc["segments"])
+        audio = jc["output"]
+        print(f"[+] Jump-cut: {jc['removed_seconds']} sn sessizlik kırpıldı")
+    cues = smart_montage.classify_broll(text, words)
+    with open(os.path.join(a.out_dir, "broll_plan.json"), "w", encoding="utf-8") as f:
+        json.dump(cues, f, indent=2, ensure_ascii=False)
 
-    # Adım 4: Seslendirme ve Kelime Bazlı Senkronizasyon (OpenVoice + Faster-Whisper)
-    print("\n[Aşama 4/6] 🎙️ Seslendirme ve Kelime Zamanlaması (Faster-Whisper)...")
-    voice = VoiceEngine()
-    full_text = " ".join([s["speech_text"] for s in script["scenes"]])
-    audio_path = os.path.join("output", "voiceover.wav")
-    await voice.generate_tts(full_text, audio_path)
-    word_alignment = voice.align_words_faster_whisper(audio_path)
+    renderer = RemotionRenderer(output_dir=a.out_dir)
+    renderer.prepare_props(script, words, audio)
+    video = renderer.render_video(os.path.join(a.out_dir, "final.mp4"), composition=a.composition)
 
-    # Adım 5: Programatik Video Kurgu & Montaj (Remotion)
-    print("\n[Aşama 5/7] 🎬 Remotion ile Video Kurgusu ve Render Ediliyor...")
-    renderer = RemotionRenderer()
-    renderer.prepare_props(script, word_alignment, audio_path)
-    final_video = renderer.render_video("output/final_video.mp4")
+    # 08 — donuk sahne denetimi
+    frozen = smart_montage.detect_static(video, max_static=4.0)
+    if frozen:
+        print(f"[!] 4 sn'den uzun donuk bölümler: {frozen}")
 
-    # Adım 6: Otomatik 2 Adet Dikey YouTube Shorts Üretimi (1080x1920)
-    print("\n[Aşama 6/7] 📱 Ana Videodan 2 Adet Dikey YouTube Shorts Çıkarılıyor...")
-    shorts_gen = ShortsGenerator()
-    shorts_meta = shorts_gen.generate_two_shorts_scripts(topic, script["scenes"])
-    rendered_shorts = []
-    for s_idx, s_item in enumerate(shorts_meta, 1):
-        s_file = shorts_gen.render_shorts(s_idx, s_item["title"], word_alignment)
-        rendered_shorts.append({"title": s_item["title"], "path": s_file})
+    # 06 — kapak
+    thumb = None
+    if a.thumbnail_text:
+        from pipeline.thumbnail_engine import make_variants
+        thumbs = make_variants(a.thumbnail_text, os.path.join(a.out_dir, "thumbnail"),
+                               bg=a.thumbnail_bg, figure=a.thumbnail_figure)
+        thumb = thumbs[0]
+        print(f"[+] Kapak varyantları: {thumbs}")
 
-    # Adım 7: Kalite Denetimi & YouTube Yükleme
-    print("\n[Aşama 7/7] 📡 YouTube Dağıtım & Yayınlama Aşaması...")
-    if auto_upload:
-        uploader = YouTubeUploader()
-        # Ana Video Yükleme
-        res = uploader.upload_video(
-            video_path=final_video,
-            title=f"{topic} (Tarih Belgeseli)",
-            description=f"Bu videoda {topic} konusunu uçtan uca inceliyoruz.\n\n#tarih #futbol #belgesel",
-            privacy_status=privacy,
-            is_shorts=False
-        )
-        print(f"✅ Ana Video başarıyla yüklendi! Link: {res.get('url')}")
-
-        # 2 Shorts Yükleme
-        for s in rendered_shorts:
-            res_s = uploader.upload_video(
-                video_path=s["path"],
-                title=s["title"],
-                description=f"{s['title']} - Detaylar ana videomuzda!\n\n#Shorts #Tarih #Futbol",
-                privacy_status=privacy,
-                is_shorts=True
-            )
-            print(f"✅ Shorts yüklendi! Link: {res_s.get('url')}")
-    else:
-        print("ℹ️ Otomatik yükleme kapalı. Dosyalar yerel olarak hazırlandı:")
-        print(f"   📂 Ana Video: {final_video}")
-        for s in rendered_shorts:
-            print(f"   📱 Shorts: {s['path']}")
-
-    print("\n🎉 Tüm süreç başarıyla tamamlandı! (1 Ana Video + 2 Shorts)")
+    # 07 — yükleme
+    if a.auto_upload:
+        if frozen and not a.force:
+            raise SystemExit("Donuk sahne bulguları var; yükleme durduruldu (--force ile geç).")
+        from pipeline.youtube_uploader import YouTubeUploader
+        up = YouTubeUploader()
+        up.authenticate()
+        res = up.upload_video(video_path=video, title=a.title or a.topic, description=a.description or "",
+                              privacy_status=a.privacy, thumbnail_path=thumb)
+        print(f"[+] Yüklendi: {res['url']}")
+    print(f"[✓] Bitti: {video}")
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Autonomous YouTube Video Generation Studio")
-    parser.add_argument("--topic", type=str, default="Bir Futbol Maçı Gerçek Bir Savaşı Nasıl Başlattı?", help="Video konusu")
-    parser.add_argument("--auto-upload", action="store_true", help="Render sonrası YouTube'a otomatik yükle")
-    parser.add_argument("--batch", action="store_true", help="5 Ana Video + 10 Shorts paketini tam otomatik üret")
-    parser.add_argument("--privacy", type=str, default="unlisted", choices=["public", "unlisted", "private"])
-
-    args = parser.parse_args()
-    if args.batch:
-        asyncio.run(run_batch_automation(auto_upload=args.auto_upload, privacy=args.privacy))
-    else:
-        asyncio.run(run_pipeline(args.topic, args.auto_upload, args.privacy))
+def main() -> None:
+    p = argparse.ArgumentParser(description="YouTube Autonomous Studio")
+    p.add_argument("--topic", required=True)
+    p.add_argument("--script", required=True, help="Markdown senaryo (## Sahne / **Ses:** / **Görsel:**)")
+    p.add_argument("--out-dir", default="output")
+    p.add_argument("--composition", default="MainVideo", help="Remotion kompozisyon kimliği")
+    p.add_argument("--voice", default="tr-TR-AhmetNeural")
+    p.add_argument("--rate", default="-4%")
+    p.add_argument("--clone-voice", action="store_true", help="OpenVoice V2 ile config/voice/reference.wav tınısına dönüştür")
+    p.add_argument("--jumpcut", action="store_true", help="Sessizlikleri kırp (belgeselde varsayılan kapalı)")
+    p.add_argument("--thumbnail-text")
+    p.add_argument("--thumbnail-bg")
+    p.add_argument("--thumbnail-figure")
+    p.add_argument("--auto-upload", action="store_true")
+    p.add_argument("--title")
+    p.add_argument("--description")
+    p.add_argument("--privacy", default="unlisted", choices=["public", "unlisted", "private"])
+    p.add_argument("--force", action="store_true")
+    asyncio.run(run(p.parse_args()))
 
 
 if __name__ == "__main__":

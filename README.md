@@ -1,104 +1,57 @@
-# 🎬 YouTube Autonomous Studio (Otonom YouTube Fabrikası)
+# 🎬 YouTube Autonomous Studio
 
-Bu repo, **trend araştırmasından senaryo yazımına, görsel ve vektörel animasyon üretiminden seslendirmeye, programatik montajdan YouTube'a otomatik yüklemeye kadar** tüm süreci uçtan uca otonom olarak yöneten yeni nesil bir yapay zeka içerik stüdyosudur.
+Araştırmadan senaryoya, seslendirmeden programatik montaja, kapak tasarımından YouTube'a yüklemeye kadar video üretim hattı.
+Mimari: [ARCHITECTURE.md](ARCHITECTURE.md). Her departman `skills/` altında bir klasördür; çalışan kod `pipeline/` altındadır.
 
----
+> **İlke:** Bir adım başarısız olursa hat durur. Sahte ses, görsel, video veya YouTube linki üretilmez.
 
-## 🧭 Referans Repolar ve Mimari Entegrasyon Haritası
+## Departmanlar ve skill'ler
 
-Açık kaynak ekosisteminin en güçlü 29 projesinden faydalanılarak kurgulanmış mimari yetenek matrisi:
+| Departman | Skill | Kaynak | Kod |
+|---|---|---|---|
+| 01 Araştırma | `trend-researcher` | fabric `youtube_summary` (MIT, kopya) | `pipeline/researcher.py` |
+|  | `open-notebook` | lfnovo/open-notebook (opsiyonel sunucu) | `research/<slug>/` kasası |
+| 02 Senaryo | `script-engine` | fabric `extract_wisdom`, `create_video_chapters` (MIT, kopya) | `pipeline/scriptwriter.py` |
+|  | `creative-fiction` | jwynia/agent-skills (lisanssız → yönlendirme) | — |
+|  | `book-to-skill` | virgiliojr94/book-to-skill (MIT, kopya) | upstream script |
+|  | `turkish-literary-script-doctor` | stüdyoya özgü | — |
+| 03 Ses | `voice-pipeline` | Edge-TTS + myshell-ai/OpenVoice V2 (MIT) | `pipeline/voice_engine.py` |
+| 04 Görsel | `visual-pipeline` | Pexels / Pixabay / ComfyUI / rembg | `pipeline/visual_engine.py` |
+| 05 Kurgu | `remotion-engine` | Remotion (+ remotion-dev/skills yönlendirme) | `remotion/`, `pipeline/remotion_render.py` |
+|  | `ffmpeg-moviepy` (Smart Montage) | OpenMontage fikirleri, sıfırdan yazıldı | `pipeline/smart_montage.py` |
+|  | `subtitle-engine` | Edge-TTS WordBoundary / faster-whisper | Remotion `Captions` |
+| 06 Kapak | `thumbnail-engine` | stüdyoya özgü | `pipeline/thumbnail_engine.py` |
+|  | `taste-design` | leonxlnx/taste-skill (MIT, kopya) | — |
+|  | `mcptoon-graphics` | ui-ux-pro-max banner-design (MIT, kopya) + çizgi film stil rehberi | — |
+| 07 Yayın | `youtube-api-uploader` | YouTube Data API v3 | `pipeline/youtube_uploader.py` |
+| 08 QA & Güvenlik | `no-ai-slop` | petergyang/no-ai-slop (MIT, kopya) + Türkçe kalıplar | `scriptwriter.BANNED_CLICHES` |
+|  | `skill-spector` | NVIDIA/SkillSpector (araç) | CLI |
+|  | `strix-audit` | usestrix/strix (araç) | CLI |
+| Global | `channel-memory` | — | `config/channel_memory.json` |
 
-| Aşama | Kullanılan Kaynak Repolar | Entegre Edilen Yetenek (Skill & Modül) |
-|---|---|---|
-| **1. Araştırma & Trend** | `yt-dlp`, `lfnovo/open-notebook`, `danielmiessler/fabric`, `find-skills` | YouTube trendleri, rakip transkript madenciliği (`extract_wisdom`), soru/yorum analizi (`skills/trend-research`). |
-| **2. Senaryo & Hikaye** | `petergyang/no-ai-slop`, `jwynia/agent-skills/creative`, `virgiliojr94/book-to-skill` | Klişelerden ve yapaylıktan arındırılmış, samimi ve akıcı insan diliyle senaryo yazımı (`skills/anti-slop-writer`). |
-| **3. Tutundurma & Tempo** | `ayghri/i-have-adhd`, `Jakeschincariol/replica-skill` | İlk 3 saniye kancası (Hook), ADHD retention pacing, merak döngüleri (Open-Loops), başarılı kanal tarzlarını klonlama (`skills/adhd-pacing-hook`). |
-| **4. Akıllı Kurgu & B-Roll** | `calesthio/openmontage` | Otomatik sessizlik budama (Jump-Cut), semantik B-roll eşleştirme ve 3.2 saniye kuralı (`skills/smart-montage`). |
-| **5. Vektörel & Kod Animasyonları** | `motion-canvas/motion-canvas` | Modern syntax highlight, kod yazılma animasyonları ve sistem akış diyagramları (`skills/motion-canvas`). |
-| **6. HTML/CSS Frame Motoru** | `heygen-com/hyperframes` | LLM ile doğrudan üretilen Tailwind CSS ve GSAP animasyonlu zengin istatistik ve metrik kartları (`skills/hyperframes-director`). |
-| **7. Matematik & Bilim Grafikleri** | `manimCommunity/manim` | 3Blue1Brown tarzı Python ile matris, nöral ağ ve benchmark eğrileri görselleştirme (`skills/manim-explainer`). |
-| **8. Görsel Estetik** | `ComfyUI`, `rembg`, `taste-skill`, `ui-ux-pro-max-skill`, `awesome-design-md`, `mcptoon` | Sinematik prompt mühendisliği, `rembg` ile şeffaf PNG cutout üretimi, thumbnail kompozisyon kuralları (`skills/taste-and-visual-direction`). |
-| **9. Ses & Senkronizasyon** | `myshell-ai/OpenVoice`, `SYSTRAN/faster-whisper` | Doğal duygulu ses klonlama / TTS ve milisaniye hassasiyetinde kelime kelime altyazı zamanlaması (`skills/voice-and-sync`). |
-| **10. Programatik Montaj** | `remotion-dev/remotion` *(Yedek: `midrender/revideo`)* | React ve Node tabanlı kod ile video birleştirme, dinamik karaoke altyazılar, b-roll ve ses ducking (`skills/remotion-director`). |
-| **11. Kalite Denetimi** | `NVIDIA/SkillSpector`, `usestrix/strix` | Yayın öncesi pre-flight denetim: AI slop kontrolü, ses kırpılması, altyazı taşması ve CTR potansiyel skoru (`skills/quality-inspector`). |
-| **12. Dağıtım & Hafıza** | `darkzOGx/youtube-automation-agent`, `thedotmack/claude-mem`, `open-generative-ai`, `superpowers` | Geçmiş videoların performansını hatırlayan kanal hafızası ve YouTube Data API v3 ile otomatik yayınlama (`skills/channel-memory`). |
+Kopyalanan upstream dosyalar değiştirilmeden, kendi LICENSE dosyalarıyla birlikte tutulur.
+Lisans dosyası olmayan repolar (jwynia/agent-skills, remotion-dev/skills) kopyalanmaz; skill yalnızca yönlendirir.
 
----
-
-## 🏗️ Genişletilmiş Mimari İş Akışı
-
-```mermaid
-flowchart TD
-    A[Topic & Trend Research\n<yt-dlp + open-notebook>] --> B[Anti-Slop Scriptwriter\n<no-ai-slop + creative>]
-    B --> C[ADHD Hook & Smart Montage\n<i-have-adhd + openmontage>]
-    
-    C --> D1[Visual Engine\n<ComfyUI + rembg cutout>]
-    C --> D2[Code & Vector Motion\n<motion-canvas>]
-    C --> D3[Rich HTML/GSAP Overlays\n<heygen-com/hyperframes>]
-    C --> D4[Math & Science Graphs\n<manim>]
-    C --> D5[Voice & Subtitle Sync\n<OpenVoice + faster-whisper>]
-    
-    D1 --> E[Remotion / ReVideo Programmatic Editor\n<Master Timeline Assembly>]
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    D5 --> E
-    
-    E --> F[Quality Inspector\n<SkillSpector + Strix Audit>]
-    F -->|Score >= 90| G[YouTube Auto-Publish & Channel Memory\n<YouTube Data API v3 + claude-mem>]
-    F -->|Score < 90| B
-```
-
----
-
-## 📂 Güncel Proje Dizin Yapısı
-
-```text
-youtube-autonomous-studio/
-├── skills/                            # Ajan Becerileri (Agent Skills)
-│   ├── trend-research/SKILL.md        # Trend ve transkript madenciliği
-│   ├── anti-slop-writer/SKILL.md      # Robotik olmayan doğal senaryo
-│   ├── adhd-pacing-hook/SKILL.md      # 3 saniye kancası & izlenme süresi
-│   ├── smart-montage/SKILL.md         # OpenMontage akıllı kurgu & sessizlik budama
-│   ├── hyperframes-director/SKILL.md  # HeyGen HTML/CSS/GSAP animasyonlu kartlar
-│   ├── motion-canvas/SKILL.md         # Vektörel kod & mimari diyagramları
-│   ├── manim-explainer/SKILL.md       # 3Blue1Brown matematik & bilim grafikleri
-│   ├── taste-and-visual-direction/SKILL.md # Estetik ve thumbnail kuralları
-│   ├── voice-and-sync/SKILL.md        # TTS ve kelime bazlı altyazı hizalama
-│   ├── remotion-director/SKILL.md     # React tabanlı video montaj yönergeleri
-│   ├── quality-inspector/SKILL.md     # Yayın öncesi kalite denetimi
-│   └── channel-memory/SKILL.md        # Kanal geçmişi ve YouTube yükleme
-│
-├── pipeline/                          # Çekirdek Motorlar
-│   ├── researcher.py                  # yt-dlp & araştırma motoru
-│   ├── scriptwriter.py                # Anti-slop senaryo üretici
-│   ├── voice_engine.py                # TTS & Faster-Whisper entegrasyonu
-│   ├── visual_engine.py               # ComfyUI API & rembg arkaplan silici
-│   ├── hyperframes_engine.py          # HTML/Tailwind/GSAP sahne üreteci
-│   ├── manim_generator.py             # Python Manim sahne üreteci
-│   ├── remotion_render.py             # Remotion CLI render motoru
-│   └── youtube_uploader.py            # YouTube Data API v3 yükleyici
-│
-├── remotion/                          # React Video Montaj Projesi
-├── config/                            # Yapılandırma & Kanal Hafızası
-├── assets/                            # Üretilen görsel, animasyon ve cutout varlıkları
-├── output/                            # Çıktı klasörü (Final MP4, WAV, Scriptler)
-├── main.py                            # Tek komutla orkestrasyon CLI
-└── requirements.txt                   # Python bağımlılıkları
-```
-
----
-
-## 🚀 Hızlı Başlangıç
-
+## Kurulum
 ```bash
-# Kurulum
 pip install -r requirements.txt
 cd remotion && npm install && cd ..
-
-# Tek Komutla Video Üretimi
-python main.py --topic "Otonom Yapay Zeka Ajanları ile Kodlama"
-
-# Remotion Canlı Önizleme
-cd remotion && npm start
 ```
+Opsiyonel: `PEXELS_API_KEY`, `PIXABAY_API_KEY`, `COMFYUI_URL`, OpenVoice (bkz. `voice-pipeline`), YouTube OAuth (`config/client_secrets.json`).
+
+## Kullanım
+Senaryo ajan tarafından skill'lerle yazılır (`## Sahne N — Başlık` / `**Ses:**` / `**Görsel:**`), sonra:
+```bash
+python main.py --topic "Yeniçeri Merdiveni" --script output/yeniceri/senaryo.md \
+    --out-dir output/yeniceri --thumbnail-text "KAZANDAN AĞALIĞA"
+```
+Bayraklar: `--clone-voice` (OpenVoice), `--jumpcut`, `--composition <id>`, `--auto-upload --privacy unlisted`.
+
+Smart Montage araçları tek başına:
+```bash
+python pipeline/smart_montage.py silences ses.mp3
+python pipeline/smart_montage.py static final.mp4 --max 4
+```
+
+## Örnek proje
+`output/yeniceri/` + `remotion/src/Yeniceri.tsx`: 15 dakikalık "Acemi Oğlanından Yeniçeri Ağasına" belgeseli (sahne bazlı ses, kelime zamanlı altyazı, SVG infografik). Ses dosyaları git'e girmez; `python output/yeniceri/tts.py` ile yeniden üretilir.

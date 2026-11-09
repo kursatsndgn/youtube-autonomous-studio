@@ -35,11 +35,8 @@ class TrendResearcher:
                         "view_count": data.get("view_count", 0)
                     })
             return videos
-        except Exception as e:
-            print(f"[!] yt-dlp search error: {e}. Fallback to simulated data.")
-            return [
-                {"id": "demo123", "title": f"Why {query} is Changing Everything", "url": "demo", "view_count": 120000}
-            ]
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise RuntimeError(f"yt-dlp araması başarısız: {e}") from e
 
     def download_transcript(self, video_url: str) -> str:
         """yt-dlp ile videonun altyazı/transkriptini çeker."""

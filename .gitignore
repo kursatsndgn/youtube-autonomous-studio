@@ -20,10 +20,19 @@ node_modules/
 .remotion/
 
 # Medya & Render Çıktıları
-output/*.mp4
-output/*.wav
-output/*.png
-output/*.jpg
+output/**/*.mp4
+output/**/*.mp3
+output/**/*.wav
+output/**/*.png
+output/**/*.jpg
+output/**/*.json
+remotion/public/_pipeline/
+remotion/public/**/*.mp3
+assets/credits.json
+assets/characters/**/*.png
+vendor/
+config/voice/
+research/**/raw/
 assets/images/*.png
 assets/cutouts/*.png
 

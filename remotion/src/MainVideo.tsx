@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring } from 'remotion';
+import { AbsoluteFill, Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate, spring } from 'remotion';
 
 interface WordItem {
   word: string;
@@ -12,16 +12,18 @@ interface SceneItem {
   speech_text: string;
   visual_prompt: string;
   overlay_text?: string;
-  pacing: string;
+  pacing?: string;
 }
 
-interface MainVideoProps {
+export interface MainVideoProps {
   title: string;
   words: WordItem[];
   scenes: SceneItem[];
+  audio?: string;
+  durationSec?: number;
 }
 
-export const MainVideo: React.FC<MainVideoProps> = ({ title, words = [], scenes = [] }) => {
+export const MainVideo: React.FC<MainVideoProps> = ({ title, words = [], scenes = [], audio }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const currentTime = frame / fps;
@@ -31,6 +33,7 @@ export const MainVideo: React.FC<MainVideoProps> = ({ title, words = [], scenes 
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#0f172a', color: '#f8fafc', fontFamily: 'sans-serif' }}>
+      {audio ? <Audio src={staticFile(audio)} /> : null}
       {/* Arka Plan Katmanı */}
       <AbsoluteFill
         style={{
