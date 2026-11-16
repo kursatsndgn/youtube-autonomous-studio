@@ -52,6 +52,29 @@ class VoiceEngine:
         print(f"[+] TTS üretildi: {output_path} ({len(words)} kelime)")
         return output_path
 
+    def generate_voxcpm(self, text: str, output_path: str, model_id: str = "openbmb/VoxCPM2",
+                        reference: Optional[str] = None) -> str:
+        """VoxCPM2 ile WAV üretir ve faster-whisper ile kelime zamanlarını çıkarır."""
+        if not text.strip():
+            raise ValueError("Seslendirilecek metin boş.")
+        if reference and not os.path.isfile(reference):
+            raise FileNotFoundError(f"Referans ses bulunamadı: {reference}")
+        try:
+            from voxcpm import VoxCPM
+            import soundfile as sf
+        except ImportError as e:
+            raise ImportError("VoxCPM kurulumu: pip install voxcpm soundfile") from e
+        model = VoxCPM.from_pretrained(model_id, load_denoiser=False)
+        args = {"text": text, "cfg_value": 2.0, "inference_timesteps": 10}
+        if reference:
+            args["reference_wav_path"] = reference
+        wav = model.generate(**args)
+        if len(wav) == 0:
+            raise RuntimeError("VoxCPM boş çıktı döndürdü.")
+        sf.write(output_path, wav, model.tts_model.sample_rate)
+        self.last_words = self.align_words_faster_whisper(output_path)
+        return output_path
+
     # ------------------------------------------------------------------ OpenVoice
     def clone_tone(self, source_audio: str, output_wav: str, reference: Optional[str] = None,
                    device: Optional[str] = None) -> str:
@@ -98,3 +121,4 @@ class VoiceEngine:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(words, f, indent=2, ensure_ascii=False)
         return path
+
