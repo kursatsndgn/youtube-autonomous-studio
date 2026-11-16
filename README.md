@@ -15,7 +15,7 @@ Mimari: [ARCHITECTURE.md](ARCHITECTURE.md). Her departman `skills/` altında bir
 |  | `creative-fiction` | jwynia/agent-skills (lisanssız → yönlendirme) | — |
 |  | `book-to-skill` | virgiliojr94/book-to-skill (MIT, kopya) | upstream script |
 |  | `turkish-literary-script-doctor` | stüdyoya özgü | — |
-| 03 Ses | `voice-pipeline` | Edge-TTS + myshell-ai/OpenVoice V2 (MIT) | `pipeline/voice_engine.py` |
+| 03 Ses | `voice-pipeline` | Edge-TTS + myshell-ai/OpenVoice V2 (MIT) / OpenBMB VoxCPM2 (Apache-2.0) | `pipeline/voice_engine.py` |
 | 04 Görsel | `visual-pipeline` | Pexels / Pixabay / ComfyUI / rembg | `pipeline/visual_engine.py` |
 |  | `lemo-opuscar` | lemomo-ai/lemo-opuscar (MIT, kopya): kodla film, 66 stil | upstream kütüphane (`~/lemo-opuscar`) |
 | 05 Kurgu | `remotion-engine` | Remotion (+ remotion-dev/skills yönlendirme) | `remotion/`, `pipeline/remotion_render.py` |
@@ -40,6 +40,7 @@ cd remotion && npm install && cd ..
 python scripts/install_skills.py          # skill'leri .claude/skills/ altına kurar (--user: ~/.claude/skills)
 ```
 Opsiyonel:
+- **VoxCPM2:** Python 3.10–3.12, PyTorch ≥2.5 ve CUDA ≥12 gerekir. `pip install voxcpm soundfile`; ilk çalıştırma model ağırlıklarını indirir. Türkçe kelime zamanları faster-whisper ile tahmin edilir. Kaynak ve model lisansı: [OpenBMB/VoxCPM](https://github.com/OpenBMB/VoxCPM).
 - **OpenVoice (ses klonlama):** `python scripts/install_openvoice.py`, sonra `config/voice/reference.wav` ekle ve `--clone-voice` kullan.
 - **Stok görsel:** `PEXELS_API_KEY`, `PIXABAY_API_KEY` (ikisi de ücretsiz hesapla alınır).
 - **AI görsel:** `COMFYUI_URL`, `COMFYUI_CHECKPOINT`, `COMFYUI_LORA`.
@@ -51,6 +52,8 @@ Senaryo ajan tarafından skill'lerle yazılır (`## Sahne N — Başlık` / `**S
 python main.py --topic "Konu" --script output/konu/senaryo.md \
     --out-dir output/konu --thumbnail-text "DÖRT KELİMELİK BAŞLIK"
 ```
+VoxCPM2 ile: `python main.py --topic "Konu" --script senaryo.md --tts-engine voxcpm --voxcpm-reference config/voice/reference.wav` (referans isteğe bağlı; yalnızca izinli ses kullanın). `--voxcpm-model` yerel model yolunu da kabul eder. `--voice` ve `--rate` Edge-TTS içindir; `--clone-voice` VoxCPM ile kullanılamaz.
+
 Bayraklar: `--clone-voice` (OpenVoice), `--jumpcut`, `--composition <id>`, `--auto-upload --privacy unlisted`.
 
 Smart Montage araçları tek başına:
@@ -61,3 +64,4 @@ python pipeline/smart_montage.py static final.mp4 --max 4
 
 ## Kişisel çıktılar
 `output/`, `remotion/public/` ve kişisel video kompozisyonları git'e girmez (`.gitignore`). Kendi kompozisyonunu `remotion/src/local/` altında tutup `Root.tsx`'e yerelde ekleyebilirsin.
+

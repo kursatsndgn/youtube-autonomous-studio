@@ -45,3 +45,9 @@ engine.clone_tone("output/base.mp3", "output/voiceover.wav")  # OpenVoice; kurul
 - **Edge-TTS sesi:** `boundary="WordBoundary"` → birebir doğru, Whisper gerekmez.
 - **Dış kayıt / insan sesi:** `faster-whisper`, Türkçe için en az `small` model, `word_timestamps=True`.
 - Çıktı biçimi `{"w","s","e"}` (subtitle-engine ve smart_montage ile ortak).
+
+## VoxCPM2 (alternatif motor)
+Kaynak: [OpenBMB/VoxCPM](https://github.com/OpenBMB/VoxCPM), Apache-2.0. Python 3.10–3.12, PyTorch ≥2.5 ve CUDA ≥12; `pip install voxcpm soundfile`. İlk çalıştırma model ağırlıklarını indirir.
+
+`main.py --tts-engine voxcpm` doğrudan WAV üretir. İsteğe bağlı `--voxcpm-reference <wav>` ile izinli bir sesi kullanır; `--voxcpm-model` model kimliğini veya yerel yolu seçer. `--clone-voice`, `--voice` ve `--rate` Edge-TTS akışına aittir. VoxCPM kelime zamanları faster-whisper ile tahmin edilir; hata varsa süreç durur.
+

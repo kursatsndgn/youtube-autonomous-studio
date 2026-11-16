@@ -45,12 +45,19 @@ async def run(a: argparse.Namespace) -> None:
 
     # 03 — ses
     voice = VoiceEngine(a.out_dir, voice=a.voice, rate=a.rate)
-    base_audio = os.path.join(a.out_dir, "voice_base.mp3")
-    await voice.generate_tts(text, base_audio)
-    words = voice.last_words
-    audio = base_audio
-    if a.clone_voice:
-        audio = voice.clone_tone(base_audio, os.path.join(a.out_dir, "voiceover.wav"))
+    if a.tts_engine == "voxcpm":
+        if a.clone_voice:
+            raise ValueError("--clone-voice yalnızca Edge-TTS ile kullanılabilir; VoxCPM için --voxcpm-reference kullanın.")
+        audio = voice.generate_voxcpm(text, os.path.join(a.out_dir, "voiceover.wav"),
+                                      model_id=a.voxcpm_model, reference=a.voxcpm_reference)
+        words = voice.last_words
+    else:
+        base_audio = os.path.join(a.out_dir, "voice_base.mp3")
+        await voice.generate_tts(text, base_audio)
+        words = voice.last_words
+        audio = base_audio
+        if a.clone_voice:
+            audio = voice.clone_tone(base_audio, os.path.join(a.out_dir, "voiceover.wav"))
 
     # 05 — smart montage
     if a.jumpcut:
@@ -99,6 +106,9 @@ def main() -> None:
     p.add_argument("--script", required=True, help="Markdown senaryo (## Sahne / **Ses:** / **Görsel:**)")
     p.add_argument("--out-dir", default="output")
     p.add_argument("--composition", default="MainVideo", help="Remotion kompozisyon kimliği")
+    p.add_argument("--tts-engine", choices=["edge-tts", "voxcpm"], default="edge-tts")
+    p.add_argument("--voxcpm-model", default="openbmb/VoxCPM2", help="Hugging Face model kimliği veya yerel model yolu")
+    p.add_argument("--voxcpm-reference", help="VoxCPM2 için izinli referans WAV")
     p.add_argument("--voice", default="tr-TR-AhmetNeural")
     p.add_argument("--rate", default="-4%")
     p.add_argument("--clone-voice", action="store_true", help="OpenVoice V2 ile config/voice/reference.wav tınısına dönüştür")
@@ -116,3 +126,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
