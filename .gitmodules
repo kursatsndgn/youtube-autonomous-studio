@@ -1,0 +1,3 @@
+[submodule "kaynaklar/WanGP"]
+	path = kaynaklar/WanGP
+	url = https://github.com/deepbeepmeep/WanGP.git
